@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazon Reviews Authorship Demo</title>
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --panel: #fffaf2;
+      --ink: #1f2933;
+      --muted: #6b7280;
+      --accent: #c76d2d;
+      --accent-dark: #8e4a1b;
+      --border: #ead8c3;
+      --good: #2d7a46;
+      --bad: #9d2f2f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, rgba(199,109,45,0.12), transparent 30%),
+        linear-gradient(135deg, #f6f0e7, #efe4d5);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    .wrap {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 24px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px;
+      box-shadow: 0 18px 45px rgba(64, 38, 14, 0.08);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+    }
+    .sub {
+      color: var(--muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .meta div, .result-box {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #d5b99a;
+      border-radius: 12px;
+      font-size: 1rem;
+      margin-bottom: 14px;
+    }
+    button {
+      background: var(--accent);
+      color: white;
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    button:hover {
+      background: var(--accent-dark);
+    }
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .status.good { color: var(--good); font-weight: 700; }
+    .status.bad { color: var(--bad); font-weight: 700; }
+    .hint {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Amazon Reviews Authorship Demo</h1>
+      <p class="sub">
+        Esta interfaz usa el mejor modelo guardado en MLflow y permite probar predicciones
+        sobre reseñas existentes del dataset, seleccionándolas por índice.
+      </p>
+
+      <div class="meta">
+        <div><strong>Best model</strong><br>{{ model_name }}</div>
+        <div><strong>Available row indexes</strong><br>0 to {{ max_index }}</div>
+      </div>
+
+      <form method="post" action="/predict">
+        <label for="row_index">Row index to predict</label>
+        <input id="row_index" name="row_index" type="number" min="0" max="{{ max_index }}" placeholder="Example: 25" required>
+        <button type="submit">Predict Author</button>
+      </form>
+
+      <p class="hint">
+        Como el dataset ya está vectorizado en 9,999 features, esta demo predice sobre registros existentes
+        en lugar de recibir texto libre.
+      </p>
+
+      {% if result %}
+      <div class="result-grid">
+        <div class="result-box"><strong>Row index</strong><br>{{ result.row_index }}</div>
+        <div class="result-box"><strong>Predicted author</strong><br>{{ result.predicted_author }}</div>
+        <div class="result-box"><strong>Actual author</strong><br>{{ result.actual_author }}</div>
+        <div class="result-box">
+          <strong>Correct?</strong><br>
+          <span class="status {{ 'good' if result.correct else 'bad' }}">
+            {{ 'Yes' if result.correct else 'No' }}
+          </span>
+        </div>
+        <div class="result-box"><strong>f1_macro</strong><br>{{ '%.4f'|format(result.f1_macro or 0) }}</div>
+        <div class="result-box"><strong>accuracy</strong><br>{{ '%.4f'|format(result.accuracy or 0) }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>
