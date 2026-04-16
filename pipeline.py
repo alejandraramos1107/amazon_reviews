@@ -32,6 +32,7 @@ from src.models.trainer import (
     select_best_model,
     train_and_evaluate_models,
 )
+from src.models.model_registry import export_best_model_for_serving
 
 
 logging.basicConfig(level=logging.INFO)
@@ -149,6 +150,12 @@ def amazon_reviews_flow(dataset_path: str = str(DATASET_PATH)) -> str:
         PRIMARY_METRIC,
         best_result["metrics"][PRIMARY_METRIC],
     )
+    export_best_model_for_serving(
+        run_id=best_result["run_id"],
+        model_name=best_result["model_name"],
+        metrics=best_result["metrics"],
+    )
+    prefect_logger.info("Exported best model for serving")
     prefect_logger.info("Creating final Prefect artifact summary")
 
     results_table = "\n".join(

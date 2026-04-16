@@ -10,6 +10,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
 MODELS_DIR = PROJECT_ROOT / "models"
 ARTIFACTS_DIR = PROJECT_ROOT / "artifacts"
+SERVING_ARTIFACTS_DIR = PROJECT_ROOT / "serving_artifacts"
 
 
 # Dataset configuration
@@ -78,3 +79,4 @@ PREFECT_DEPLOYMENT_NAME = "amazon-reviews-training"
 # Ensure local directories exist when needed by training / tracking code
 MODELS_DIR.mkdir(exist_ok=True)
 ARTIFACTS_DIR.mkdir(exist_ok=True)
+SERVING_ARTIFACTS_DIR.mkdir(exist_ok=True)

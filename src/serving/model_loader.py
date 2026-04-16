@@ -5,14 +5,14 @@ Model loading utilities for the Amazon reviews demo interface.
 from __future__ import annotations
 
 import logging
+import json
 from dataclasses import dataclass
+from pathlib import Path
 
-import mlflow
 import mlflow.sklearn
 import pandas as pd
-from mlflow.tracking import MlflowClient
 
-from src.config import DATASET_PATH, MLFLOW_EXPERIMENT_NAME, MLFLOW_DEFAULT_URI, TARGET_COLUMN
+from src.config import DATASET_PATH, SERVING_ARTIFACTS_DIR, TARGET_COLUMN
 from src.data.loaders import load_amazon_reviews
 from src.features.engineering import FeatureEngineer
 
@@ -41,37 +41,18 @@ class ReviewModelLoader:
         if self._loaded is not None:
             return self._loaded
 
-        mlflow.set_tracking_uri(MLFLOW_DEFAULT_URI)
-        client = MlflowClient()
-        experiment = client.get_experiment_by_name(MLFLOW_EXPERIMENT_NAME)
-        if experiment is None:
+        metadata_path = SERVING_ARTIFACTS_DIR / "metadata.json"
+        model_dir = SERVING_ARTIFACTS_DIR / "best_model"
+        if not metadata_path.exists() or not model_dir.exists():
             raise RuntimeError(
-                f"MLflow experiment '{MLFLOW_EXPERIMENT_NAME}' was not found. "
-                "Run the training pipeline first."
+                "Serving artifacts were not found. Run the training pipeline or "
+                "`python export_best_model.py` first."
             )
 
-        runs = client.search_runs(
-            experiment_ids=[experiment.experiment_id],
-            filter_string="attributes.status = 'FINISHED' and params.model_name != ''",
-            order_by=["metrics.f1_macro DESC"],
-            max_results=20,
-        )
-        if not runs:
-            raise RuntimeError("No finished training runs were found in MLflow.")
-
-        best_run = None
-        for run in runs:
-            if "model" in [artifact.path for artifact in client.list_artifacts(run.info.run_id)]:
-                best_run = run
-                break
-
-        if best_run is None:
-            raise RuntimeError("No MLflow run with a logged model artifact was found.")
-
-        run_id = best_run.info.run_id
-        model_uri = f"runs:/{run_id}/model"
-        model = mlflow.sklearn.load_model(model_uri)
-        model_name = best_run.data.params.get("model_name", "unknown")
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        run_id = metadata.get("run_id", "unknown")
+        model_name = metadata.get("model_name", "unknown")
+        model = mlflow.sklearn.load_model(str(model_dir))
 
         dataset = load_amazon_reviews(str(DATASET_PATH))
         feature_columns = [column for column in dataset.columns if column != TARGET_COLUMN]
@@ -87,12 +68,12 @@ class ReviewModelLoader:
             model=model,
             model_name=model_name,
             run_id=run_id,
-            metrics=best_run.data.metrics,
+            metrics=metadata.get("metrics", {}),
             dataset=dataset,
             transformed_dataset=transformed_dataset,
             feature_columns=feature_columns,
         )
-        logger.info("Loaded best MLflow model: %s (%s)", model_name, run_id)
+        logger.info("Loaded serving model: %s (%s) from %s", model_name, run_id, model_dir)
         return self._loaded
 
     def predict_by_index(self, row_index: int) -> dict:

@@ -42,7 +42,6 @@ async def root(request: Request) -> HTMLResponse:
             "result": None,
             "max_index": len(loaded.dataset) - 1,
             "model_name": loaded.model_name,
-            "run_id": loaded.run_id,
         },
     )
 
@@ -65,7 +64,6 @@ async def predict(request: Request, row_index: int = Form(...)) -> HTMLResponse:
             "result": result,
             "max_index": len(loaded.dataset) - 1,
             "model_name": loaded.model_name,
-            "run_id": loaded.run_id,
         },
     )
 
@@ -76,7 +74,6 @@ async def health() -> dict:
     return {
         "status": "healthy",
         "model_name": loaded.model_name,
-        "run_id": loaded.run_id,
         "rows_available": len(loaded.dataset),
     }
 
